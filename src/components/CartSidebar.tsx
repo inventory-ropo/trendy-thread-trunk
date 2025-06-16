@@ -1,103 +1,124 @@
 
-import { X, Plus, Minus, ShoppingBag } from "lucide-react";
-import { useCart } from "../contexts/CartContext";
+import React from 'react';
+import { X, Plus, Minus, Trash2 } from 'lucide-react';
+
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  brand: string;
+  selectedSize?: string;
+  quantity: number;
+}
 
 interface CartSidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  cartItems: CartItem[];
+  onUpdateQuantity: (id: string, quantity: number) => void;
+  onRemoveItem: (id: string) => void;
 }
 
-const CartSidebar = ({ isOpen, onClose }: CartSidebarProps) => {
-  const { items, updateQuantity, removeFromCart, getCartTotal } = useCart();
+const CartSidebar: React.FC<CartSidebarProps> = ({
+  isOpen,
+  onClose,
+  cartItems,
+  onUpdateQuantity,
+  onRemoveItem
+}) => {
+  const totalPrice = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50">
-      <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl">
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b">
-            <h2 className="text-xl font-medium flex items-center">
-              <ShoppingBag className="mr-2" size={20} />
-              Shopping Cart ({items.length})
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <X size={20} />
-            </button>
-          </div>
+    <>
+      {/* Overlay */}
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 z-50"
+        onClick={onClose}
+      />
+      
+      {/* Sidebar */}
+      <div className="fixed right-0 top-0 h-full w-96 bg-white shadow-xl z-50 flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="text-lg font-semibold">Shopping Cart ({cartItems.length})</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-full"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-          {/* Cart Items */}
-          <div className="flex-1 overflow-y-auto p-6">
-            {items.length === 0 ? (
-              <div className="text-center py-12">
-                <ShoppingBag size={48} className="mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-500">Your cart is empty</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {items.map((item) => (
-                  <div key={`${item.id}-${item.selectedSize}-${item.selectedColor}`} className="flex space-x-4">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-16 h-16 object-cover rounded"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-medium">{item.name}</h3>
-                      <p className="text-sm text-gray-500">
-                        {item.selectedSize} / {item.selectedColor}
-                      </p>
-                      <p className="font-medium">${item.price}</p>
-                      
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => updateQuantity(`${item.id}-${item.selectedSize}-${item.selectedColor}`, item.quantity - 1)}
-                            className="p-1 border rounded hover:bg-gray-50"
-                          >
-                            <Minus size={12} />
-                          </button>
-                          <span className="text-sm">{item.quantity}</span>
-                          <button
-                            onClick={() => updateQuantity(`${item.id}-${item.selectedSize}-${item.selectedColor}`, item.quantity + 1)}
-                            className="p-1 border rounded hover:bg-gray-50"
-                          >
-                            <Plus size={12} />
-                          </button>
-                        </div>
+        {/* Cart Items */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {cartItems.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">Your cart is empty</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {cartItems.map((item) => (
+                <div key={item.id} className="flex gap-3 p-3 border rounded-lg">
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-16 h-16 object-cover rounded"
+                  />
+                  <div className="flex-1">
+                    <h3 className="font-medium text-sm">{item.name}</h3>
+                    <p className="text-xs text-gray-500">{item.brand}</p>
+                    {item.selectedSize && (
+                      <p className="text-xs text-gray-500">Size: {item.selectedSize}</p>
+                    )}
+                    <p className="font-semibold text-sm mt-1">₹{item.price}</p>
+                    
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center gap-2">
                         <button
-                          onClick={() => removeFromCart(`${item.id}-${item.selectedSize}-${item.selectedColor}`)}
-                          className="text-red-500 text-sm hover:text-red-700"
+                          onClick={() => onUpdateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                          className="p-1 hover:bg-gray-100 rounded"
                         >
-                          Remove
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="text-sm font-medium">{item.quantity}</span>
+                        <button
+                          onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                          className="p-1 hover:bg-gray-100 rounded"
+                        >
+                          <Plus className="w-3 h-3" />
                         </button>
                       </div>
+                      <button
+                        onClick={() => onRemoveItem(item.id)}
+                        className="p-1 text-red-500 hover:bg-red-50 rounded"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Footer */}
-          {items.length > 0 && (
-            <div className="border-t p-6">
-              <div className="flex justify-between text-lg font-medium mb-4">
-                <span>Total:</span>
-                <span>${getCartTotal().toFixed(2)}</span>
-              </div>
-              <button className="w-full bg-black text-white py-3 rounded hover:bg-gray-800 transition-colors">
-                Checkout
-              </button>
+                </div>
+              ))}
             </div>
           )}
         </div>
+
+        {/* Footer */}
+        {cartItems.length > 0 && (
+          <div className="border-t p-4">
+            <div className="flex justify-between items-center mb-4">
+              <span className="font-semibold">Total: ₹{totalPrice}</span>
+              <span className="text-sm text-gray-500">Delivery in 30 mins</span>
+            </div>
+            <button className="w-full bg-orange-500 text-white py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors">
+              Go to Checkout
+            </button>
+          </div>
+        )}
       </div>
-    </div>
+    </>
   );
 };
 
